@@ -22,7 +22,7 @@ RSS_SOURCES = [
     {"name": "ایسنا اقتصادی",  "url": "https://www.isna.ir/rss/tp-economy",            "priority": 3},
     {"name": "مهر اقتصادی",    "url": "https://www.mehrnews.com/rss/economy",          "priority": 3},
     {"name": "دنیای اقتصاد",   "url": "https://www.donya-e-eqtesad.com/rss",           "priority": 3},
-    {"name": "اقتصادنیوز",     "url": "https://www.eghtesadnews.com/rss",              "priority": 3},
+    {"name": "اقتصادنیوز",     "url": "https://www.eghtesadnews.com/feeds",            "priority": 3},
     {"name": "بانکداری ایران",  "url": "https://www.bankdari.ir/rss",                  "priority": 2},
     {"name": "بانک مرکزی",     "url": "https://www.cbi.ir/rss/news.aspx",              "priority": 3},
     {"name": "سازمان بورس",    "url": "https://www.seo.ir/rss",                        "priority": 3},
@@ -73,6 +73,10 @@ def summarize(title, body):
 
 
 def send_telegram(msg):
+    if not TELEGRAM_TOKEN:
+        logger.error("TELEGRAM_TOKEN is not set")
+        return False
+
     try:
         r = requests.post(
             f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
@@ -80,11 +84,16 @@ def send_telegram(msg):
                   "parse_mode": "HTML", "disable_web_page_preview": False},
             timeout=10,
         )
-        if r.status_code != 200:
-            logger.error(f"تلگرام: {r.text}")
-        return r.status_code == 200
+
+        if r.status_code == 200:
+            logger.info(f"Telegram sent successfully to {CHANNEL_ID}")
+            return True
+
+        logger.error(f"Telegram failed: status={r.status_code}, response={r.text}")
+        return False
+
     except Exception as e:
-        logger.error(f"تلگرام: {e}")
+        logger.error(f"Telegram error: {e}")
         return False
 
 
