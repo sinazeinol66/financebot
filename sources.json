@@ -1,0 +1,110 @@
+[
+  {
+    "name": "ایرنا اقتصادی",
+    "url": "https://www.irna.ir/rss/economy/",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "تسنیم اقتصادی",
+    "url": "https://www.tasnimnews.com/fa/rss/feed/0/5/0",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "فارس اقتصادی",
+    "url": "https://www.farsnews.ir/rss/economy",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "ایسنا اقتصادی",
+    "url": "https://www.isna.ir/rss/tp-economy",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "مهر اقتصادی",
+    "url": "https://www.mehrnews.com/rss/economy",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "دنیای اقتصاد",
+    "url": "https://www.donya-e-eqtesad.com/rss",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "اقتصادنیوز",
+    "url": "https://www.eghtesadnews.com/rss",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "اقتصاد آنلاین",
+    "url": "https://www.eghtesadonline.com/rss",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "تجارت نیوز",
+    "url": "https://www.tejaratnews.com/rss",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "ایبنا",
+    "url": "https://www.ibena.ir/rss",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "راه پرداخت",
+    "url": "https://way2pay.ir/feed",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "بورس نیوز",
+    "url": "https://www.boursenews.ir/rss",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "بانک مرکزی",
+    "url": "https://www.cbi.ir/rss/news.aspx",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "سازمان بورس",
+    "url": "https://www.seo.ir/rss",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "بانکداری ایران",
+    "url": "https://www.bankdari.ir/rss",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "عصر ایران اقتصادی",
+    "url": "https://www.asriran.com/rss/economy",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "عصر تراکنش",
+    "url": "https://www.asretransaction.ir/feed",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "اقتصاد 24",
+    "url": "https://www.eghtesad24.com/rss",
+    "priority": 2,
+    "active": true
+  }
+]
