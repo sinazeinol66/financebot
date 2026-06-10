@@ -1,109 +1,442 @@
 [
   {
-    "name": "ایرنا اقتصادی",
-    "url": "https://www.irna.ir/rss/economy/",
+    "name": "بانک مرکزی ایران",
+    "url": "https://cbi.ir/category/news.aspx",
+    "type": "website",
     "priority": 3,
     "active": true
   },
   {
-    "name": "تسنیم اقتصادی",
-    "url": "https://www.tasnimnews.com/fa/rss/feed/0/5/0",
+    "name": "سازمان بورس و اوراق بهادار",
+    "url": "https://www.sena.ir/",
+    "type": "website",
     "priority": 3,
     "active": true
   },
   {
-    "name": "فارس اقتصادی",
-    "url": "https://www.farsnews.ir/rss/economy",
+    "name": "بورس اوراق بهادار تهران",
+    "url": "https://www.tse.ir/news/allNews?cat=news",
+    "type": "website",
     "priority": 3,
     "active": true
   },
   {
-    "name": "ایسنا اقتصادی",
-    "url": "https://www.isna.ir/rss/tp-economy",
+    "name": "فرابورس ایران",
+    "url": "https://www.ifb.ir/AllNews.aspx",
+    "type": "website",
     "priority": 3,
     "active": true
   },
   {
-    "name": "مهر اقتصادی",
-    "url": "https://www.mehrnews.com/rss/economy",
+    "name": "کدال (سامانه ناشران)",
+    "url": "https://www.codal.ir/News.aspx",
+    "type": "website",
     "priority": 3,
+    "active": true
+  },
+  {
+    "name": "شاپرک",
+    "url": "https://shaparak.ir/fa/news",
+    "type": "website",
+    "priority": 2,
     "active": true
   },
   {
     "name": "دنیای اقتصاد",
-    "url": "https://www.donya-e-eqtesad.com/rss",
+    "url": "https://donya-e-eqtesad.com/%D8%A8%D8%AE%D8%B4-%D8%B3%D8%A7%DB%8C%D8%AA-%D8%AE%D9%88%D8%A7%D9%86-62",
+    "type": "website",
     "priority": 3,
     "active": true
   },
   {
     "name": "اقتصادنیوز",
-    "url": "https://www.eghtesadnews.com/rss",
+    "url": "https://www.eghtesadnews.com/%D8%A8%D8%AE%D8%B4-%D8%A2%D8%AE%D8%B1%DB%8C%D9%86-%D8%A7%D8%AE%D8%A8%D8%A7%D8%B1-133",
+    "type": "website",
     "priority": 3,
     "active": true
   },
   {
     "name": "اقتصاد آنلاین",
-    "url": "https://www.eghtesadonline.com/rss",
+    "url": "https://www.eghtesadonline.com/fa/allnews",
+    "type": "website",
     "priority": 3,
     "active": true
   },
   {
-    "name": "تجارت نیوز",
-    "url": "https://www.tejaratnews.com/rss",
+    "name": "تجارت‌نیوز",
+    "url": "https://www.tejaratnews.com",
+    "type": "website",
     "priority": 3,
     "active": true
   },
   {
-    "name": "ایبنا",
-    "url": "https://www.ibena.ir/rss",
+    "name": "ایرنا اقتصادی",
+    "url": "https://www.irna.ir/service/economy",
+    "type": "website",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "ایسنا اقتصادی",
+    "url": "https://www.isna.ir/service/Economy",
+    "type": "website",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "تسنیم اقتصادی",
+    "url": "https://www.tasnimnews.ir/fa/service/7/%D8%A7%D9%82%D8%AA%D8%B5%D8%A7%D8%AF%DB%8C",
+    "type": "website",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "فارس اقتصادی",
+    "url": "https://farsnews.ir/economy",
+    "type": "website",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "مهر اقتصادی",
+    "url": "https://www.mehrnews.com/service/Economy",
+    "type": "website",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "ایبنا (بانک و بیمه)",
+    "url": "https://www.ibena.ir/fa/allnews",
+    "type": "website",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "عصر ایران اقتصادی",
+    "url": "https://www.asriran.com/fa/archive/section/229",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "پارسیک (Parseek)",
+    "url": "https://www.parseek.com/",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "راه پرداخت",
+    "url": "https://www.way2pay.ir",
+    "type": "website",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "عصر تراکنش",
+    "url": "https://asretarakonesh.ir/#report",
+    "type": "website",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "عصر پرداخت",
+    "url": "https://www.asrepardakht.ir/",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "فینتک‌نیوز",
+    "url": "https://fintecha.ir/category/news/",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "بانک امروز",
+    "url": "https://bankemruz.ir/category/%d8%a8%d8%a7%d9%86%da%a9%d8%af%d8%a7%d8%b1%db%8c/",
+    "type": "website",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "بورس‌نیوز",
+    "url": "https://www.boursenews.ir/fa/allnews",
+    "type": "website",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "اقتصاد ۲۴",
+    "url": "https://eghtesaad24.ir/",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "بانکداری ایران",
+    "url": "https://bankdariirani.ir/category/%d8%a8%d8%a7%d9%86%da%a9/",
+    "type": "website",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "بانک و بیمه (bankoobiime)",
+    "url": "https://www.donyayebank.ir/",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "بانک‌نیوز",
+    "url": "https://www.akhbarbank.com/",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "روابط عمومی بانک ملی",
+    "url": "https://www.bmi.ir/news/",
+    "type": "website",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "روابط عمومی بانک صادرات",
+    "url": "https://www.bsi.ir/Pages/AboutUs/news.aspx",
+    "type": "website",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "روابط عمومی بانک ملت",
+    "url": "https://www.bankmellat.ir/fa-IR/site/4944/page/%D8%A7%D8%AE%D8%A8%D8%A7%D8%B1-%D8%A8%D8%A7%D9%86%DA%A9-%D9%85%D9%84%D8%AA",
+    "type": "website",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "روابط عمومی بانک تجارت",
+    "url": "https://www.tejaratbank.ir/web_directory/375-News-and-Announcements.html",
+    "type": "website",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "روابط عمومی بانک سپه",
+    "url": "https://banksepah.ir/module/News/Newsarchive/page-1301/index.aspx",
+    "type": "website",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "روابط عمومی بانک پارسیان",
+    "url": "https://www.parsian-bank.ir/web_directory/53453-%D8%A7%D8%AE%D8%A8%D8%A7%D8%B1.html",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "روابط عمومی بانک پاسارگاد",
+    "url": "https://bpi.ir/fa/news/archive",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "روابط عمومی بانک سامان",
+    "url": "https://www.sb24.ir/",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "روابط عمومی بانک رفاه",
+    "url": "https://www.refah-bank.ir/news",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "روابط عمومی پست‌بانک",
+    "url": "https://www.postbank.ir/archive/",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "روابط عمومی بانک قرض‌الحسنه مهر",
+    "url": "https://www.qardalhasan.ir/service/news",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "روابط عمومی بانک کشاورزی",
+    "url": "https://www.bki.ir/news",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "روابط عمومی بانک توسعه صادرات",
+    "url": "https://www.edbi.ir/web_directory/41494-%D8%A7%D8%AE%D8%A8%D8%A7%D8%B1-%D8%A8%D8%A7%D9%86%DA%A9.html",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "روابط عمومی بانک صنعت و معدن",
+    "url": "https://www.bim.ir/fa-IR/Portal/5136/page/%D8%A2%D8%B1%D8%B4%D9%8A%D9%88-%D8%A7%D8%AE%D8%A8%D8%A7%D8%B1",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "روابط عمومی بانک مسکن",
+    "url": "https://www.bank-maskan.ir/latest-news",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "روابط عمومی بانک اقتصاد نوین",
+    "url": "https://www.enbank.ir/fa/page/50421-%D8%A7%D8%AE%D8%A8%D8%A7%D8%B1.html",
+    "type": "website",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "روابط عمومی بانک سینا",
+    "url": "https://sinabank.ir/fa/page/50421-%D8%A7%D8%AE%D8%A8%D8%A7%D8%B1.html",
+    "type": "website",
+    "priority": 1,
+    "active": true
+  },
+  {
+    "name": "دنیای اقتصاد",
+    "url": "https://t.me/den_ir",
+    "type": "telegram",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "اقتصاد آنلاین",
+    "url": "https://t.me/eghtesadonline",
+    "type": "telegram",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "تجارت‌نیوز",
+    "url": "https://t.me/tejaratnews",
+    "type": "telegram",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "نبض بازار",
+    "url": "https://t.me/nabzehbazaar",
+    "type": "telegram",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "ایبنا - بانک و بیمه",
+    "url": "https://t.me/ibena_news",
+    "type": "telegram",
     "priority": 3,
     "active": true
   },
   {
     "name": "راه پرداخت",
-    "url": "https://way2pay.ir/feed",
+    "url": "https://t.me/newway2pay",
+    "type": "telegram",
     "priority": 3,
-    "active": true
-  },
-  {
-    "name": "بورس نیوز",
-    "url": "https://www.boursenews.ir/rss",
-    "priority": 3,
-    "active": true
-  },
-  {
-    "name": "بانک مرکزی",
-    "url": "https://www.cbi.ir/rss/news.aspx",
-    "priority": 3,
-    "active": true
-  },
-  {
-    "name": "سازمان بورس",
-    "url": "https://www.seo.ir/rss",
-    "priority": 3,
-    "active": true
-  },
-  {
-    "name": "بانکداری ایران",
-    "url": "https://www.bankdari.ir/rss",
-    "priority": 2,
-    "active": true
-  },
-  {
-    "name": "عصر ایران اقتصادی",
-    "url": "https://www.asriran.com/rss/economy",
-    "priority": 2,
     "active": true
   },
   {
     "name": "عصر تراکنش",
-    "url": "https://www.asretransaction.ir/feed",
+    "url": "https://t.me/asretarakoneshmag",
+    "type": "telegram",
     "priority": 3,
     "active": true
   },
   {
-    "name": "اقتصاد 24",
-    "url": "https://www.eghtesad24.com/rss",
+    "name": "بورس‌نیوز",
+    "url": "https://t.me/boursenews",
+    "type": "telegram",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "نرخ ارز - تی‌جی‌جی‌یو",
+    "url": "https://t.me/seke_kargosha",
+    "type": "telegram",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "نوسان (نرخ ارز)",
+    "url": "https://t.me/navasanchannel",
+    "type": "telegram",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "سنا - نرخ رسمی ارز",
+    "url": "https://t.me/navasaneebours",
+    "type": "telegram",
+    "priority": 3,
+    "active": true
+  },
+  {
+    "name": "بانک ملی ایران",
+    "url": "https://t.me/bankmelli_ir",
+    "type": "telegram",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "بانک ملت",
+    "url": "https://t.me/mellatbankiran",
+    "type": "telegram",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "بانک صادرات",
+    "url": "https://t.me/bsi_1331",
+    "type": "telegram",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "بانک تجارت",
+    "url": "https://t.me/tejaratbanknews",
+    "type": "telegram",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "بانک پاسارگاد",
+    "url": "https://t.me/wepod12",
+    "type": "telegram",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "فینتک‌نیوز",
+    "url": "https://t.me/iranfintech",
+    "type": "telegram",
+    "priority": 2,
+    "active": true
+  },
+  {
+    "name": "اقتصاد ۲۴",
+    "url": "https://t.me/eghtesaad24_ir",
+    "type": "telegram",
     "priority": 2,
     "active": true
   }
