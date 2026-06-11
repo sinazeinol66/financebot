@@ -2,6 +2,7 @@ import os, time, hashlib, logging, requests, json
 from datetime import datetime, timezone, timedelta
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
+import feedparser
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -10,13 +11,8 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
 CHECK_INTERVAL = int(os.environ.get("CHECK_INTERVAL", "120"))
 ANTHROPIC_KEY  = os.environ.get("ANTHROPIC_API_KEY", "")
 TEHRAN         = timezone(timedelta(hours=3, minutes=30))
+MAX_AGE_HOURS  = 6  # خبرهای بیشتر از ۶ ساعت پیش نادیده گرفته می‌شن
 
-# ================================================================
-#  کانال‌ها — برای اضافه کردن رسته جدید:
-#  1. یه کانال تلگرام بساز
-#  2. ربات رو admin کن
-#  3. یه آیتم جدید اینجا اضافه کن
-# ================================================================
 CHANNELS = {
     "general":   "@financeconnectzone",
     "bank":      "@fcz_bank",
@@ -27,64 +23,63 @@ CHANNELS = {
     "business":  "@fcz_business",
 }
 
-# ================================================================
-#  کلمات کلیدی هر رسته — برای دسته‌بندی خودکار خبرها
-# ================================================================
 CATEGORY_KEYWORDS = {
     "bank": [
         "بانک","بانکی","بانکداری","بانک مرکزی","شبکه بانکی","نظام بانکی",
-        "سپرده","حساب بانکی","کارت بانکی","شتاب","سپام","بانک ملی",
-        "بانک صادرات","بانک ملت","بانک تجارت","بانک سپه","بانک مسکن",
-        "بانک پارسیان","بانک پاسارگاد","بانک آینده","بانک سامان",
+        "سپرده","حساب بانکی","کارت بانکی","شتاب","سپام",
+        "بانک ملی","بانک صادرات","بانک ملت","بانک تجارت","بانک سپه",
+        "بانک مسکن","بانک پارسیان","بانک پاسارگاد","بانک آینده","بانک سامان",
         "نرخ سود","سود بانکی","بهره","ربا","ذخیره قانونی",
         "چک","برات","حواله","انتقال وجه","کارمزد",
         "بانک خصوصی","بانک دولتی","موسسه اعتباری",
     ],
     "fintech": [
         "فینتک","فین‌تک","پرداخت الکترونیک","درگاه پرداخت","پرداختیار",
-        "رمزارز","ارز دیجیتال","بیت کوین","بلاکچین","کریپتو","توکن","NFT",
+        "رمزارز","ارز دیجیتال","بیت کوین","بلاکچین","کریپتو","توکن",
         "استارتاپ مالی","نئوبانک","بانک دیجیتال","کیف پول دیجیتال",
         "پوز","pos","شاپرک","راه پرداخت","عصر تراکنش",
-        "اینترنت بانک","موبایل بانک","پرداخت آنلاین",
-        "فناوری مالی","دیجیتال","اپلیکیشن مالی",
+        "اینترنت بانک","موبایل بانک","پرداخت آنلاین","فناوری مالی",
     ],
     "bourse": [
         "بورس","فرابورس","سهام","سهامداران","شاخص بورس","شاخص کل",
         "اوراق بهادار","صکوک","اوراق مشارکت","اوراق خزانه",
         "صندوق سرمایه گذاری","ETF","عرضه اولیه","IPO",
-        "بازار سرمایه","کارگزاری","ناشر","شرکت بورسی",
-        "معامله","حجم معاملات","ارزش معاملات","پرتفو",
-        "سازمان بورس","بورس تهران","فرابورس","بورس کالا","بورس انرژی",
-        "تحلیل تکنیکال","تحلیل بنیادی","کدال",
+        "بازار سرمایه","کارگزاری","بورس تهران","بورس کالا","بورس انرژی",
+        "معامله","حجم معاملات","ارزش معاملات","کدال","سازمان بورس",
     ],
     "insurance": [
         "بیمه","بیمه گر","بیمه گذار","بیمه نامه","خسارت بیمه",
         "بیمه عمر","بیمه درمان","بیمه اتومبیل","بیمه شخص ثالث",
         "بیمه مرکزی","بیمه ایران","بیمه آسیا","بیمه البرز",
-        "بیمه پاسارگاد","بیمه ملت","بیمه دی","بیمه نوین",
-        "حق بیمه","پوشش بیمه","بیمه اجباری","بیمه اختیاری",
+        "حق بیمه","پوشش بیمه","بیمه اجباری",
     ],
     "lending": [
         "وام","تسهیلات","اعتبار","قرض","قرض الحسنه",
-        "لندتک","لنداپ","فین‌لند","اعتبارسنجی","رتبه اعتباری",
-        "ضمانت","ضامن","وثیقه","رهن","وام مسکن","وام خودرو",
-        "وام ازدواج","وام فرزندآوری","وام اشتغال",
-        "مالی خرد","میکروفایننس","تامین مالی جمعی","کراودفاندینگ",
-        "وام بدون ضامن","وام آنلاین","اعطای تسهیلات",
+        "لندتک","اعتبارسنجی","رتبه اعتباری",
+        "ضمانت","وثیقه","وام مسکن","وام خودرو",
+        "وام ازدواج","وام اشتغال","مالی خرد","میکروفایننس",
+        "تامین مالی جمعی","کراودفاندینگ","وام آنلاین",
     ],
     "business": [
-        "کسب و کار","شرکت","سازمان","مدیرعامل","هیئت مدیره",
-        "استارتاپ","کارآفرینی","سرمایه گذاری خطرپذیر","VC",
-        "مالیات","سازمان مالیاتی","اظهارنامه","معافیت مالیاتی",
-        "گمرک","صادرات","واردات","تراز تجاری","تجارت خارجی",
-        "بودجه","قانون بودجه","درآمد دولت","یارانه",
-        "خصوصی سازی","سهام عدالت","صندوق توسعه ملی",
-        "تولید ناخالص","GDP","رشد اقتصادی","رکود","رونق",
-        "نرخ ارز","دلار","تورم","نقدینگی",
+        "کسب و کار","شرکت","مدیرعامل","هیئت مدیره",
+        "استارتاپ","کارآفرینی","سرمایه گذاری خطرپذیر",
+        "مالیات","سازمان مالیاتی","معافیت مالیاتی",
+        "گمرک","صادرات","واردات","تراز تجاری",
+        "بودجه","درآمد دولت","خصوصی سازی","سهام عدالت",
+        "تولید ناخالص","GDP","رشد اقتصادی","رکود","تورم","نقدینگی",
     ],
 }
 
-FINANCE_KEYWORDS = [kw for kws in CATEGORY_KEYWORDS.values() for kw in kws]
+HASHTAGS = {
+    "bank":      "#بانک #بانکداری",
+    "fintech":   "#فینتک #پرداخت_دیجیتال",
+    "bourse":    "#بورس #بازار_سرمایه",
+    "insurance": "#بیمه",
+    "lending":   "#تسهیلات #لندتک #وام",
+    "business":  "#کسب_و_کار #اقتصاد",
+}
+
+FINANCE_KEYWORDS = list({kw for kws in CATEGORY_KEYWORDS.values() for kw in kws})
 
 EXCLUDE_KEYWORDS = [
     "جنگ","حمله","موشک","پهپاد","سپاه","ارتش","نظامی",
@@ -106,7 +101,7 @@ def load_sources():
     try:
         with open("sources.json", encoding="utf-8") as f:
             all_s = json.load(f)
-        active = [s for s in all_s if s.get("active", True)]
+        active    = [s for s in all_s if s.get("active", True)]
         websites  = [s for s in active if s.get("type") != "telegram"]
         telegrams = [s for s in active if s.get("type") == "telegram"]
         logger.info(f"{len(websites)} سایت + {len(telegrams)} کانال تلگرام")
@@ -116,8 +111,14 @@ def load_sources():
         return [], []
 
 
+def is_fresh(pub_date: datetime) -> bool:
+    """فقط اخبار MAX_AGE_HOURS ساعت اخیر"""
+    now = datetime.now(timezone.utc)
+    age = (now - pub_date).total_seconds() / 3600
+    return age <= MAX_AGE_HOURS
+
+
 def detect_categories(title: str, body: str = "") -> list:
-    """تشخیص رسته‌های مرتبط با خبر — ممکنه چند رسته باشه"""
     text = title + " " + body
     matched = []
     for cat, keywords in CATEGORY_KEYWORDS.items():
@@ -125,7 +126,7 @@ def detect_categories(title: str, body: str = "") -> list:
         if hits >= 1:
             matched.append((cat, hits))
     matched.sort(key=lambda x: x[1], reverse=True)
-    return [m[0] for m in matched[:2]]  # حداکثر ۲ رسته
+    return [m[0] for m in matched[:2]]
 
 
 def score_news(title: str, summary: str = ""):
@@ -160,9 +161,11 @@ def summarize(title: str, body: str) -> str:
             headers={"x-api-key": ANTHROPIC_KEY,
                      "anthropic-version": "2023-06-01",
                      "content-type": "application/json"},
-            json={"model": "claude-haiku-4-5-20251001", "max_tokens": 120,
+            json={"model": "claude-haiku-4-5-20251001", "max_tokens": 150,
                   "messages": [{"role": "user", "content":
-                      f"خبر زیر را در 1 تا 2 جمله کوتاه فارسی خلاصه کن. فقط خلاصه:\n{title}\n{body[:400]}"}]},
+                      f"این خبر را در ۲ جمله ساده فارسی خلاصه کن. "
+                      f"مخاطب باید بفهمد موضوع خبر چیست. فقط خلاصه بنویس:\n"
+                      f"عنوان: {title}\nمتن: {body[:500]}"}]},
             timeout=15,
         )
         if r.status_code == 200:
@@ -188,6 +191,17 @@ def send_telegram(msg: str, channel: str) -> bool:
         return False
 
 
+def parse_rss_date(entry) -> datetime | None:
+    for a in ("published_parsed", "updated_parsed"):
+        t = getattr(entry, a, None)
+        if t:
+            try:
+                return datetime(*t[:6], tzinfo=timezone.utc)
+            except:
+                pass
+    return None
+
+
 def fetch_website(source: dict) -> list:
     results = []
     headers = {
@@ -199,10 +213,40 @@ def fetch_website(source: dict) -> list:
     try:
         resp = requests.get(source["url"], headers=headers, timeout=15)
         resp.raise_for_status()
+
+        # اگر RSS بود از feedparser استفاده کن
+        content_type = resp.headers.get("content-type", "")
+        if "xml" in content_type or "rss" in content_type:
+            feed = feedparser.parse(resp.content)
+            for e in feed.entries[:20]:
+                title   = (e.get("title") or "").strip()
+                link    = (e.get("link") or "").strip()
+                summary = e.get("summary") or ""
+                if not title or not link:
+                    continue
+                pub_date = parse_rss_date(e) or datetime.now(timezone.utc)
+                if not is_fresh(pub_date):
+                    continue
+                h = hashlib.md5((title + link).encode()).hexdigest()
+                if h in sent_hashes:
+                    continue
+                ok, score = score_news(title, summary)
+                if not ok:
+                    continue
+                cats = detect_categories(title, summary)
+                results.append({
+                    "title": title, "link": link, "body": summary,
+                    "source": source["name"], "priority": source.get("priority", 2),
+                    "hash": h, "date": pub_date, "score": score, "categories": cats,
+                })
+            logger.info(f"+ {source['name']} (RSS): {len(results)} خبر تازه")
+            return results
+
+        # وب‌سایت معمولی
         soup = BeautifulSoup(resp.content, "lxml")
         base = urlparse(source["url"])
         seen_urls = set()
-        accepted = rejected = 0
+        accepted = rejected = stale = 0
         for a in soup.find_all("a", href=True):
             href  = a["href"].strip()
             title = a.get_text(strip=True)
@@ -225,6 +269,7 @@ def fetch_website(source: dict) -> list:
                 rejected += 1
                 continue
             cats = detect_categories(title)
+            # وب‌سایت معمولی تاریخ ندارد — زمان الان رو می‌ذاریم (تازه فرض می‌کنیم)
             results.append({
                 "title": title, "link": full_url, "body": "",
                 "source": source["name"], "priority": source.get("priority", 2),
@@ -234,7 +279,7 @@ def fetch_website(source: dict) -> list:
             accepted += 1
             if accepted >= 10:
                 break
-        logger.info(f"+ {source['name']}: {accepted} قبول | {rejected} رد")
+        logger.info(f"+ {source['name']}: {accepted} قبول | {rejected} رد | {stale} قدیمی")
     except requests.exceptions.ConnectionError:
         logger.warning(f"- {source['name']}: قطع اتصال")
     except requests.exceptions.Timeout:
@@ -252,17 +297,31 @@ def fetch_telegram_channel(source: dict) -> list:
         resp = requests.get(url, headers=headers, timeout=15)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.content, "lxml")
-        accepted = rejected = 0
-        for msg_div in soup.find_all("div", class_="tgme_widget_message_text"):
+        accepted = rejected = stale = 0
+        for msg_wrap in soup.find_all("div", class_="tgme_widget_message_wrap"):
+            # تاریخ پیام
+            time_tag = msg_wrap.find("time")
+            pub_date  = datetime.now(timezone.utc)
+            if time_tag and time_tag.get("datetime"):
+                try:
+                    pub_date = datetime.fromisoformat(
+                        time_tag["datetime"].replace("Z", "+00:00")
+                    )
+                except:
+                    pass
+            if not is_fresh(pub_date):
+                stale += 1
+                continue
+            msg_div = msg_wrap.find("div", class_="tgme_widget_message_text")
+            if not msg_div:
+                continue
             text = msg_div.get_text(strip=True)
             if not text or len(text) < 15:
                 continue
-            msg_wrap = msg_div.find_parent("div", class_="tgme_widget_message_wrap")
             link = source["url"]
-            if msg_wrap:
-                a = msg_wrap.find("a", class_="tgme_widget_message_date")
-                if a:
-                    link = a.get("href", source["url"])
+            a = msg_wrap.find("a", class_="tgme_widget_message_date")
+            if a:
+                link = a.get("href", source["url"])
             h = hashlib.md5((text[:100] + link).encode()).hexdigest()
             if h in sent_hashes:
                 continue
@@ -275,13 +334,13 @@ def fetch_telegram_channel(source: dict) -> list:
                 "title": text[:120] + ("..." if len(text) > 120 else ""),
                 "link": link, "body": text,
                 "source": source["name"], "priority": source.get("priority", 2),
-                "hash": h, "date": datetime.now(timezone.utc),
+                "hash": h, "date": pub_date,
                 "score": score, "categories": cats,
             })
             accepted += 1
             if accepted >= 5:
                 break
-        logger.info(f"+ {source['name']} (TG): {accepted} قبول | {rejected} رد")
+        logger.info(f"+ {source['name']} (TG): {accepted} قبول | {rejected} رد | {stale} قدیمی")
     except Exception as e:
         logger.warning(f"- {source['name']} (TG): {e}")
     return results
@@ -302,7 +361,6 @@ def dedupe(news_list: list) -> list:
     for g in groups:
         best = max(g, key=lambda x: (x["score"], x["priority"]))
         best["also"] = [x["source"] for x in g if x["source"] != best["source"]]
-        # ادغام رسته‌های همه نسخه‌های تکراری
         all_cats = []
         for item in g:
             all_cats.extend(item.get("categories", []))
@@ -311,45 +369,28 @@ def dedupe(news_list: list) -> list:
     return out
 
 
-CAT_LABELS = {
-    "bank":      "🏦 بانک و اعتبار",
-    "fintech":   "💳 فینتک و پرداخت",
-    "bourse":    "📈 بورس و سرمایه",
-    "insurance": "🛡 بیمه",
-    "lending":   "💰 تسهیلات و لندتک",
-    "business":  "🏢 کسب و کار",
-}
-
-
 def fmt(n: dict) -> str:
-    stars  = "⭐" * n["priority"]
-    dt     = n["date"].astimezone(TEHRAN).strftime("%Y/%m/%d  %H:%M")
-    summ   = summarize(n["title"], n["body"])
-    cats   = " | ".join(CAT_LABELS.get(c, c) for c in n.get("categories", []))
+    summ  = summarize(n["title"], n["body"])
+    cats  = n.get("categories", [])
+    tags  = " ".join(HASHTAGS.get(c, "") for c in cats).strip()
 
     msg  = f"📰 <b>{n['title']}</b>\n\n"
     if summ:
-        msg += f"📝 {summ}\n\n"
-    if cats:
-        msg += f"🏷 {cats}\n"
-    msg += f"🕐 {dt}\n"
-    msg += f"📡 {n['source']} {stars}\n"
+        msg += f"{summ}\n\n"
+    msg += f"📡 <i>{n['source']}</i>\n"
     if n.get("also"):
-        msg += f"🔁 همچنین در: {' | '.join(n['also'])}\n"
+        msg += f"🔁 همچنین: {' | '.join(n['also'])}\n"
+    if tags:
+        msg += f"\n{tags}\n"
     msg += f"\n🔗 <a href='{n['link']}'>مشاهده خبر</a>"
     return msg
 
 
 def publish(news: dict):
-    """ارسال به کانال جنرال + کانال‌های تخصصی مرتبط"""
     msg = fmt(news)
-
-    # همیشه به کانال جنرال
     if send_telegram(msg, CHANNELS["general"]):
         sent_hashes.add(news["hash"])
         time.sleep(1.5)
-
-    # به کانال‌های تخصصی
     for cat in news.get("categories", []):
         if cat in CHANNELS:
             send_telegram(msg, CHANNELS[cat])
@@ -360,38 +401,32 @@ def run():
     websites, telegrams = load_sources()
     logger.info("=== شروع چرخه ===")
     all_news = []
-
     for src in websites:
         all_news.extend(fetch_website(src))
         time.sleep(1)
-
     for src in telegrams:
         all_news.extend(fetch_telegram_channel(src))
         time.sleep(1)
-
-    logger.info(f"بعد از فیلتر: {len(all_news)}")
+    logger.info(f"بعد از فیلتر و تازگی: {len(all_news)}")
     all_news.sort(key=lambda x: (x["score"], x["priority"]), reverse=True)
     unique = dedupe(all_news)[:15]
     logger.info(f"بعد از حذف تکراری: {len(unique)}")
-
     for n in unique:
         publish(n)
-
-    logger.info(f"=== چرخه تمام شد ===")
+    logger.info("=== چرخه تمام شد ===")
 
 
 def main():
-    logger.info("ربات خبری مالی v10 شروع به کار کرد")
+    logger.info("ربات خبری مالی v11 شروع به کار کرد")
     send_telegram(
-        "🚀 <b>شبکه کانال‌های خبری مالی ایران فعال شد</b>\n\n"
-        "📡 کانال‌های فعال:\n"
-        "🔹 جنرال: @financeconnectzone\n"
-        "🏦 بانک: @fcz_bank\n"
-        "💳 فینتک: @fcz_fintech\n"
-        "📈 بورس: @fcz_bourse\n"
-        "🛡 بیمه: @fcz_insurance\n"
-        "💰 تسهیلات: @fcz_lending\n"
-        "🏢 کسب‌وکار: @fcz_business",
+        "🚀 <b>شبکه کانال‌های خبری مالی ایران</b> فعال شد\n\n"
+        "📡 @financeconnectzone — جنرال\n"
+        "🏦 @fcz_bank — بانک\n"
+        "💳 @fcz_fintech — فینتک\n"
+        "📈 @fcz_bourse — بورس\n"
+        "🛡 @fcz_insurance — بیمه\n"
+        "💰 @fcz_lending — تسهیلات\n"
+        "🏢 @fcz_business — کسب‌وکار",
         CHANNELS["general"]
     )
     while True:
