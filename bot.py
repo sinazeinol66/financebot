@@ -208,7 +208,7 @@ def build_msg(short_title: str, summary: str, source: str,
     msg += "\n"
     if tags:
         msg += f"{tags}\n"
-    msg += f"🔗 <a href='{link'}>جزئیات خبر</a>"
+    msg += f"🔗 <a href='{link}'>جزئیات خبر</a>"
     return msg
 
 
