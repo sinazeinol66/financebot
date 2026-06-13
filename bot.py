@@ -1,4 +1,4 @@
-import os, time, hashlib, logging, requests, json
+import os, time, hashlib, logging, requests, json, re
 from datetime import datetime, timezone, timedelta
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
 CHECK_INTERVAL = int(os.environ.get("CHECK_INTERVAL", "120"))
-ANTHROPIC_KEY  = os.environ.get("ANTHROPIC_API_KEY", "")
 TEHRAN         = timezone(timedelta(hours=3, minutes=30))
 MAX_AGE_HOURS  = 24
 
@@ -72,34 +71,97 @@ STRONG_FINANCE = [
     "بیمه","سرمایه","پرداخت","اوراق","صندوق","نرخ سود","فینتک",
 ]
 
-# ذخیره خبرهای ارسال‌شده: key -> {title, link, sources, msg_ids, time}
 published_stories: dict = {}
 sent_hashes: set = set()
 
 
-def load_sources():
+def clean_text(text: str) -> str:
+    """پاک‌سازی متن از ایموجی و کاراکترهای اضافه"""
+    text = re.sub(r'[🔺🔻🔸🔹💠✅❌⚡️🎥📌📊💰🏦🔔⬇️⬆️➡️◀️▶️]', '', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
+
+
+def make_title(raw_title: str) -> str:
+    """
+    ساخت تیتر خوانا از عنوان خام:
+    - حذف ایموجی و علائم
+    - اگر طولانیه، در اولین نقطه یا ؛ قطع کن
+    - حداکثر ۶۰ کاراکتر
+    """
+    title = clean_text(raw_title)
+    # قطع در نقطه‌گذاری
+    for sep in ['؛', '|', '-', '–', ':', '،']:
+        if sep in title:
+            parts = title.split(sep)
+            if len(parts[0].strip()) >= 15:
+                title = parts[0].strip()
+                break
+    # حداکثر ۶۰ کاراکتر
+    if len(title) > 65:
+        words = title[:65].split()
+        title = " ".join(words[:-1]) + "..."
+    return title
+
+
+def make_summary(title: str, body: str) -> str:
+    """
+    ساخت خلاصه از متن خبر:
+    - اول جمله‌های مفید body رو پیدا کن
+    - اگه body خالیه، از تیتر استفاده کن
+    - حداکثر ۲ جمله
+    """
+    text = clean_text(body) if body else ""
+
+    if len(text) < 30:
+        return ""
+
+    # پیدا کردن جملات
+    sentences = re.split(r'[.!؟]\s+', text)
+    sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
+
+    # فیلتر جملات تبلیغاتی
+    junk = ["کلیک کن","بیشتر بخوانید","ادامه مطلب","برای اطلاعات","جهت اطلاع","منبع:","به گزارش"]
+    sentences = [s for s in sentences if not any(j in s for j in junk)]
+
+    if not sentences:
+        return ""
+
+    # ۲ جمله اول
+    result = ". ".join(sentences[:2])
+    if not result.endswith("."):
+        result += "."
+
+    # حداکثر ۲۰۰ کاراکتر
+    if len(result) > 200:
+        result = result[:197] + "..."
+
+    return result
+
+
+def fetch_article_body(url: str) -> str:
+    """خواندن متن مقاله از صفحه خبر"""
     try:
-        with open("sources.json", encoding="utf-8") as f:
-            all_s = json.load(f)
-        active    = [s for s in all_s if s.get("active", True)]
-        websites  = [s for s in active if s.get("type") != "telegram"]
-        telegrams = [s for s in active if s.get("type") == "telegram"]
-        logger.info(f"{len(websites)} سایت + {len(telegrams)} کانال")
-        return websites, telegrams
-    except Exception as e:
-        logger.error(f"خطا: {e}")
-        return [], []
-
-
-def is_fresh(pub_date: datetime) -> bool:
-    return (datetime.now(timezone.utc) - pub_date).total_seconds() / 3600 <= MAX_AGE_HOURS
-
-
-def is_valid_title(title: str) -> bool:
-    if not title or len(title) < 15 or len(title.split()) < 4:
-        return False
-    junk = ["صفحه اصلی","ورود","ثبت نام","تماس","درباره","آرشیو","بیشتر بخوانید","ادامه مطلب","دسته بندی"]
-    return not any(w in title for w in junk)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "Accept-Language": "fa-IR,fa;q=0.9"
+        }
+        resp = requests.get(url, headers=headers, timeout=8)
+        soup = BeautifulSoup(resp.content, "lxml")
+        for tag in soup(["nav","footer","header","script","style","aside"]):
+            tag.decompose()
+        for selector in ["article", ".content", ".news-content", ".article-body",
+                         ".post-content", ".text", "main p"]:
+            el = soup.select_one(selector)
+            if el:
+                text = el.get_text(separator=" ", strip=True)
+                if len(text) > 80:
+                    return text[:600]
+        # fallback: همه پاراگراف‌ها
+        paras = [p.get_text(strip=True) for p in soup.find_all("p") if len(p.get_text(strip=True)) > 40]
+        return " ".join(paras[:3])[:600]
+    except:
+        return ""
 
 
 def extract_hashtags(text: str) -> str:
@@ -132,113 +194,57 @@ def score_news(title: str, summary: str = "") -> tuple:
 
 
 def story_key(title: str) -> str:
-    stop = {"از","به","در","با","که","این","را","و","یا","است","بود","می","شد","شده","کرد","خود","برای","های","هر","آن","یک","هم"}
-    words = [w for w in title.split() if w not in stop]
+    stop = {"از","به","در","با","که","این","را","و","یا","است","بود","می","شد","کرد","خود","برای","های","هر","آن","یک","هم"}
+    words = [w for w in clean_text(title).split() if w not in stop]
     return " ".join(sorted(words[:6]))
 
 
 def find_existing(title: str) -> str:
-    stop = {"از","به","در","با","که","این","را","و","یا","است","بود","می","شد","شده","کرد","خود","برای","های","هر","آن"}
-    w1 = set(title.split()) - stop
+    stop = {"از","به","در","با","که","این","را","و","یا","است","بود","می","شد","کرد","خود","برای","های","هر","آن"}
+    w1 = set(clean_text(title).split()) - stop
     for key, story in published_stories.items():
-        w2 = set(story["title"].split()) - stop
+        w2 = set(clean_text(story["title"]).split()) - stop
         if len(w1) >= 2 and len(w2) >= 2:
             if len(w1 & w2) / min(len(w1), len(w2)) >= 0.55:
                 return key
     return ""
 
 
-def fetch_article_body(url: str) -> str:
-    """دریافت متن مقاله برای خلاصه‌سازی"""
+def is_fresh(pub_date: datetime) -> bool:
+    return (datetime.now(timezone.utc) - pub_date).total_seconds() / 3600 <= MAX_AGE_HOURS
+
+
+def is_valid_title(title: str) -> bool:
+    t = clean_text(title)
+    if len(t) < 15 or len(t.split()) < 3:
+        return False
+    junk = ["صفحه اصلی","ورود","ثبت نام","تماس با","درباره ما","آرشیو","بیشتر بخوانید","ادامه مطلب","دسته‌بندی","برچسب"]
+    return not any(w in t for w in junk)
+
+
+def load_sources():
     try:
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-                   "Accept-Language": "fa-IR,fa;q=0.9"}
-        resp = requests.get(url, headers=headers, timeout=10)
-        soup = BeautifulSoup(resp.content, "lxml")
-        # حذف منو و فوتر
-        for tag in soup(["nav","footer","header","script","style"]):
-            tag.decompose()
-        # پیدا کردن متن اصلی
-        for selector in ["article", ".content", ".news-content", ".article-body", "main"]:
-            el = soup.select_one(selector)
-            if el:
-                text = el.get_text(separator=" ", strip=True)
-                if len(text) > 100:
-                    return text[:800]
-        return soup.get_text(separator=" ", strip=True)[:600]
-    except:
-        return ""
-
-
-def ai_process(title: str, body: str) -> tuple:
-    """
-    ساخت تیتر ۵ کلمه + خلاصه ۳ جمله با AI
-    اگر body خالیه، اول متن مقاله رو می‌گیریم
-    """
-    content = body.strip() if body.strip() else title
-
-    if not ANTHROPIC_KEY:
-        words = title.split()
-        return " ".join(words[:5]) + ("..." if len(words) > 5 else ""), ""
-
-    try:
-        r = requests.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": ANTHROPIC_KEY,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json"
-            },
-            json={
-                "model": "claude-haiku-4-5-20251001",
-                "max_tokens": 250,
-                "messages": [{
-                    "role": "user",
-                    "content": (
-                        "برای این خبر مالی فقط دو خط بنویس:\n"
-                        "TITLE: تیتر فارسی حداکثر ۵ کلمه - موضوع و نتیجه اصلی\n"
-                        "SUMMARY: خلاصه فارسی در ۲ جمله کوتاه - چه اتفاقی افتاد و چه تاثیری دارد\n\n"
-                        "مثال:\n"
-                        "TITLE: وام ازدواج بانک تجارت آغاز شد\n"
-                        "SUMMARY: بانک تجارت ثبت‌نام وام ازدواج ۲۰۰ میلیونی را از امروز آغاز کرد. "
-                        "متقاضیان با مراجعه به شعب می‌توانند ثبت‌نام کنند.\n\n"
-                        f"عنوان خبر: {title}\n"
-                        f"متن: {content[:600]}\n\n"
-                        "فقط TITLE و SUMMARY بنویس:"
-                    )
-                }]
-            },
-            timeout=20,
-        )
-        if r.status_code == 200:
-            output = r.json()["content"][0]["text"].strip()
-            title_out = summary_out = ""
-            for line in output.split("\n"):
-                line = line.strip()
-                if line.startswith("TITLE:"):
-                    title_out = line[6:].strip()
-                elif line.startswith("SUMMARY:"):
-                    summary_out = line[8:].strip()
-            if title_out and summary_out:
-                return title_out, summary_out
-            if title_out:
-                return title_out, ""
+        with open("sources.json", encoding="utf-8") as f:
+            all_s = json.load(f)
+        active    = [s for s in all_s if s.get("active", True)]
+        websites  = [s for s in active if s.get("type") != "telegram"]
+        telegrams = [s for s in active if s.get("type") == "telegram"]
+        logger.info(f"{len(websites)} سایت + {len(telegrams)} کانال")
+        return websites, telegrams
     except Exception as e:
-        logger.warning(f"AI error: {e}")
-
-    words = title.split()
-    return " ".join(words[:5]) + ("..." if len(words) > 5 else ""), ""
+        logger.error(f"خطا: {e}")
+        return [], []
 
 
-def build_msg(short_title: str, summary: str, sources: list, tags: str, link: str) -> str:
-    main_source = sources[0] if sources else ""
-    also = sources[1:4] if len(sources) > 1 else []
+def build_msg(title: str, summary: str, sources: list, tags: str, link: str) -> str:
+    main_src = sources[0] if sources else ""
+    also = sources[1:3] if len(sources) > 1 else []
 
-    msg = f"<b>{short_title}</b>\n\n"
+    msg  = f"<b>{title}</b>\n\n"
     if summary:
         msg += f"{summary}\n\n"
     msg += "—\n"
-    msg += f"📡 {main_source}"
+    msg += f"📡 {main_src}"
     if also:
         msg += f" · {' | '.join(also)}"
     msg += "\n"
@@ -275,7 +281,7 @@ def tg_edit(msg: str, channel: str, message_id: int) -> bool:
         )
         return r.status_code == 200
     except Exception as e:
-        logger.error(f"edit {channel}: {e}")
+        logger.error(f"edit: {e}")
         return False
 
 
@@ -311,7 +317,7 @@ def fetch_source(source: dict) -> list:
             for e in feed.entries[:30]:
                 title   = (e.get("title") or "").strip()
                 link    = (e.get("link") or "").strip()
-                summary = e.get("summary") or ""
+                summary = clean_text(e.get("summary") or "")
                 if not title or not link or not is_valid_title(title):
                     continue
                 pub = parse_rss_date(e)
@@ -334,7 +340,6 @@ def fetch_source(source: dict) -> list:
             logger.info(f"RSS {source['name']}: {acc} | قدیمی:{stale}")
             return results
 
-        # صفحه وب
         soup = BeautifulSoup(resp.content, "lxml")
         base = urlparse(source["url"])
         seen, acc = set(), 0
@@ -403,7 +408,7 @@ def fetch_telegram(source: dict) -> list:
             div = wrap.find("div", class_="tgme_widget_message_text")
             if not div:
                 continue
-            text = div.get_text(strip=True)
+            text = clean_text(div.get_text(strip=True))
             if not text or len(text) < 20:
                 continue
             link = source["url"]
@@ -417,7 +422,7 @@ def fetch_telegram(source: dict) -> list:
             if not ok:
                 continue
             results.append({
-                "title": text[:200], "link": link, "body": text,
+                "title": text[:150], "link": link, "body": text,
                 "source": source["name"], "priority": source.get("priority", 2),
                 "hash": h, "date": pub, "score": score,
                 "categories": detect_categories(text[:300]),
@@ -427,40 +432,40 @@ def fetch_telegram(source: dict) -> list:
                 break
         logger.info(f"TG {source['name']}: {acc} | قدیمی:{stale}")
     except Exception as e:
-        logger.warning(f"TG خطا {source['name']}: {e}")
+        logger.warning(f"TG {source['name']}: {e}")
     return results
 
 
 def publish(news: dict):
-    title = news["title"]
-    link  = news["link"]
-    body  = news["body"]
+    raw_title = news["title"]
+    link      = news["link"]
+    body      = news["body"]
 
     # اگر body خالیه، متن مقاله رو بگیر
     if not body.strip() and link.startswith("http"):
         body = fetch_article_body(link)
 
-    short_title, summary = ai_process(title, body)
-    tags = extract_hashtags(title + " " + body)
-    cats = news.get("categories", [])
+    title   = make_title(raw_title)
+    summary = make_summary(raw_title, body)
+    tags    = extract_hashtags(raw_title + " " + body)
+    cats    = news.get("categories", [])
 
-    existing_key = find_existing(title)
+    existing_key = find_existing(raw_title)
 
     if existing_key and existing_key in published_stories:
         story = published_stories[existing_key]
         if news["source"] in story["sources"]:
             sent_hashes.add(news["hash"])
-            logger.info(f"تکراری کامل رد شد: {short_title[:30]}")
             return
         story["sources"].append(news["source"])
-        msg = build_msg(short_title, summary, story["sources"], tags, story["link"])
+        msg = build_msg(title, summary, story["sources"], tags, story["link"])
         for channel, mid in story["msg_ids"].items():
             tg_edit(msg, channel, mid)
             time.sleep(1)
         sent_hashes.add(news["hash"])
-        logger.info(f"ادیت ({len(story['sources'])} منبع): {short_title[:30]}")
+        logger.info(f"ادیت ({len(story['sources'])} منبع): {title[:35]}")
     else:
-        msg = build_msg(short_title, summary, [news["source"]], tags, link)
+        msg = build_msg(title, summary, [news["source"]], tags, link)
         msg_ids = {}
         mid = tg_send(msg, CHANNELS["general"])
         if mid:
@@ -474,16 +479,14 @@ def publish(news: dict):
                     msg_ids[cat] = mid
                 time.sleep(1.5)
         if msg_ids:
-            key = story_key(title)
-            published_stories[key] = {
-                "title": title, "link": link,
+            published_stories[story_key(raw_title)] = {
+                "title": raw_title, "link": link,
                 "sources": [news["source"]],
                 "msg_ids": msg_ids,
                 "time": datetime.now(timezone.utc),
             }
-            logger.info(f"جدید: {short_title[:30]}")
+            logger.info(f"جدید: {title[:35]}")
 
-    # پاک کردن خبرهای قدیمی از حافظه
     now = datetime.now(timezone.utc)
     old = [k for k, v in published_stories.items()
            if (now - v["time"]).total_seconds() > 86400]
@@ -501,16 +504,15 @@ def run():
     for src in telegrams:
         all_news.extend(fetch_telegram(src))
         time.sleep(1)
-    logger.info(f"کل خبرها: {len(all_news)}")
+    logger.info(f"کل: {len(all_news)}")
 
-    # گروه‌بندی اخبار مشابه
     stop = {"از","به","در","با","که","این","را","و","یا","است","بود","می","شد","کرد","خود","برای","های","هر","آن"}
     groups = []
     for n in all_news:
-        w1 = set(n["title"].split()) - stop
+        w1 = set(clean_text(n["title"]).split()) - stop
         placed = False
         for g in groups:
-            w2 = set(g[0]["title"].split()) - stop
+            w2 = set(clean_text(g[0]["title"]).split()) - stop
             if len(w1) >= 2 and len(w2) >= 2 and len(w1&w2)/min(len(w1),len(w2)) >= 0.55:
                 g.append(n)
                 placed = True
@@ -519,19 +521,18 @@ def run():
             groups.append([n])
 
     groups.sort(key=lambda g: max(x["score"] for x in g), reverse=True)
-    logger.info(f"گروه‌های یکتا: {len(groups)}")
+    logger.info(f"یکتا: {len(groups)}")
 
     for g in groups[:15]:
         best = max(g, key=lambda x: (x["score"], x["priority"]))
-        best["also_sources"] = [x["source"] for x in g if x["source"] != best["source"]]
         publish(best)
 
     logger.info("=== تمام ===")
 
 
 def main():
-    logger.info("ربات v16 شروع کرد")
-    tg_send("🚀 <b>شبکه خبری مالی ایران v16</b> فعال شد", CHANNELS["general"])
+    logger.info("ربات v17 شروع کرد")
+    tg_send("🚀 <b>شبکه خبری مالی ایران v17</b> فعال شد", CHANNELS["general"])
     while True:
         try:
             run()
